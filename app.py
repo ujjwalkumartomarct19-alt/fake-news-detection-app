@@ -1,96 +1,50 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "3ba1af86",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import streamlit as st\n",
-    "import pickle\n",
-    "import os\n",
-    "import subprocess\n",
-    "import sys\n",
-    "\n",
-    "MODEL_FILE = \"model.pkl\"\n",
-    "VECT_FILE = \"vectorizer.pkl\"\n",
-    "TRAIN_SCRIPT = \"train_model.py\"\n",
-    "\n",
-    "st.set_page_config(page_title=\"Fake News Detection\", layout=\"centered\")\n",
-    "\n",
-    "st.title(\"📰 Fake News Detection\")\n",
-    "st.write(\"A simple Streamlit app that predicts whether news text is real or fake using ML.\")\n",
-    "\n",
-    "# ---------------- UI LAYOUT ----------------\n",
-    "col1, col2 = st.columns([3, 1])\n",
-    "\n",
-    "with col1:\n",
-    "    user_text = st.text_area(\"Paste news article/headline:\", height=200)\n",
-    "\n",
-    "with col2:\n",
-    "    # Check if model exists\n",
-    "    if os.path.exists(MODEL_FILE) and os.path.exists(VECT_FILE):\n",
-    "        st.success(\"Model & Vectorizer Found ✅\")\n",
-    "    else:\n",
-    "        st.warning(\"Model not found ❌\\nClick Train to create model.pkl & vectorizer.pkl\")\n",
-    "\n",
-    "    # Train button\n",
-    "    if st.button(\"Train Model\"):\n",
-    "        with st.spinner(\"Training model using train_model.py ...\"):\n",
-    "            proc = subprocess.run([sys.executable, TRAIN_SCRIPT], capture_output=True, text=True)\n",
-    "\n",
-    "            if proc.returncode == 0:\n",
-    "                st.success(\"Training Completed 🎉\")\n",
-    "            else:\n",
-    "                st.error(\"Training Failed ❌\")\n",
-    "                st.code(proc.stdout + \"\\n\\n\" + proc.stderr)\n",
-    "\n",
-    "# ---------------- PREDICTION ----------------\n",
-    "if st.button(\"Predict Fake / Real\"):\n",
-    "    if not user_text:\n",
-    "        st.warning(\"Please enter text to predict.\")\n",
-    "    else:\n",
-    "        if not (os.path.exists(MODEL_FILE) and os.path.exists(VECT_FILE)):\n",
-    "            st.error(\"Model files not found. Train first!\")\n",
-    "        else:\n",
-    "            model = pickle.load(open(MODEL_FILE, \"rb\"))\n",
-    "            vectorizer = pickle.load(open(VECT_FILE, \"rb\"))\n",
-    "\n",
-    "            # Vectorize input\n",
-    "            X = vectorizer.transform([user_text])\n",
-    "            prediction = model.predict(X)[0]\n",
-    "\n",
-    "            # Display result\n",
-    "            if prediction == 1 or str(prediction).lower() in (\"real\", \"true\", \"1\"):\n",
-    "                st.success(\"✅ REAL NEWS\")\n",
-    "            else:\n",
-    "                st.error(\"❌ FAKE NEWS\")\n",
-    "\n",
-    "st.markdown(\"---\")\n",
-    "st.write(\"Powered by Streamlit + Machine Learning\")\n"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.10.9"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import streamlit as st
+import pickle
+import os
+import subprocess
+import sys
+
+MODEL_FILE = "model.pkl"
+VECT_FILE = "vectorizer.pkl"
+TRAIN_SCRIPT = "train_model.py"
+
+st.set_page_config(page_title="Fake News Detection", layout="centered")
+
+st.title("📰 Fake News Detection")
+st.write("A simple ML model to classify news as real or fake.")
+
+# MAIN INPUT
+news_text = st.text_area("Enter News Text Here:", height=200)
+
+# TRAINING SECTION
+if st.button("Train Model"):
+    with st.spinner("Training model... please wait"):
+        result = subprocess.run([sys.executable, TRAIN_SCRIPT], capture_output=True, text=True)
+        if result.returncode == 0:
+            st.success("Training completed! model.pkl and vectorizer.pkl created.")
+        else:
+            st.error("Training failed.")
+            st.code(result.stdout + "\n\n" + result.stderr)
+
+# PREDICTION SECTION
+if st.button("Predict"):
+    if not news_text:
+        st.warning("Please enter text before predicting.")
+    else:
+        if not os.path.exists(MODEL_FILE) or not os.path.exists(VECT_FILE):
+            st.error("Model files not found! Please train first.")
+        else:
+            model = pickle.load(open(MODEL_FILE, "rb"))
+            vectorizer = pickle.load(open(VECT_FILE, "rb"))
+
+            X = vectorizer.transform([news_text])
+            prediction = model.predict(X)[0]
+
+            if str(prediction) in ["1", "real", "Real"]:
+                st.success("✅ REAL NEWS")
+            else:
+                st.error("❌ FAKE NEWS")
+
+st.markdown("---")
+st.write("Developed using Streamlit + Machine Learning")
+
